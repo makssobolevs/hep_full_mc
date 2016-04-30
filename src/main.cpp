@@ -83,8 +83,8 @@ void findRange(pair<double, double>& range, double minNow, double maxNow){
 
 int main(){
 
-    double sqrtS = 100;
-    double finalSqrtS = 300;
+    double sqrtS = 250;
+    double finalSqrtS = 260;
     double d_sqrtS = 10;
 
     random_device rd;
@@ -130,6 +130,18 @@ int main(){
         rand_dist disT1(T1_start,0);
         rand_dist disT2(T2_start, T2_finish);
 
+        vector <double> histo_grid;
+        int col = 15;
+        vector <int> histo(col  , 0);
+        double max = 200;
+
+        double dx = max / col;
+
+        for (int i = 0; i < col; i++) {
+            histo_grid.push_back(i*dx);
+        }
+
+
         tout.open(outLogName, std::ios_base::app);
         logBounds(tout, "S1", S1_start, S1_finish);
         logBounds(tout, "S2", S2_start, S2_finish);
@@ -166,6 +178,18 @@ int main(){
                 double x = matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
                 findRange(rangeX, x, x);
 
+                for (size_t k = 0; k < histo_grid.size() - 1; k++) {
+                    if (x < histo_grid.at(k+1) && x > histo_grid.at(k)) {
+                        histo.at(k)++;
+                        if (k > 1) {
+                            tout << "N:" << i << " " << x << " s1:" << s1rand <<
+                                    " s2:" << s2rand << " t1:" << t1rand << " t2:" << t2rand <<
+                                    " sqrtDelta:" << sqrt(-valueDelta) << "\n";
+                        }
+                    }
+                }
+
+
                 if (std::isnan(x)) {
                     string mess = "NAN IN CALCULATIONS:\n";
                     cout << mess;
@@ -193,6 +217,13 @@ int main(){
         logBounds(boundsOut, "X", rangeX.first, rangeX.second);
         boundsOut << "\n";
         boundsOut.close();
+
+        ofstream hout("histo.dat");
+        for (size_t i = 0; i < histo_grid.size(); i++) {
+            hout << histo_grid.at(i) << " " << histo.at(i) << "\n";
+        }
+        hout.close();
+
 
         fout.open(outName,std::ios_base::app);
         fout << sqrtS << ' ' << (sum* volume1 *points_cought)/(POINT_NUMBER*s*s) << '\n';
