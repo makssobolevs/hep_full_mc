@@ -106,17 +106,19 @@ int main(){
         long double sum = 0;
         int points_cought = 0;
 
-        double S1_start = 10;//m*m
+        double diverg = 50;
+
         double S1_finish = (sqrtS-mz)*(sqrtS-mz);
+        double S1_start = 0.05*S1_finish;//m*m
 
         double S2_start = s2range(sqrtS).first;
         double S2_finish = s2range(sqrtS).second;
 
-        double T1_start = t1minus(s, S2_start);
-        double T1_finish = 0;
+        double T1_start = t1minus(s, S2_start)+diverg;
+        double T1_finish = -diverg;
 
-        double T2_finish = 0;
-        double T2_start = t2minus(S2_finish, T1_start);
+        double T2_finish = -diverg;
+        double T2_start = t2minus(S2_finish, T1_start)+diverg;
 
         pair <double, double> rangeT2 = make_pair(BIG_POSITIVE_NUMBER, BIG_NEGATIVE_NUMBER);
         pair <double, double> rangeT1 = rangeT2;
@@ -150,12 +152,12 @@ int main(){
             double valueG2 = gg(s2rand, t2rand, mz*mz, t1rand,0,0);
             double valueG3 = gg(s,t1rand,s2rand,m*m,0,m*m);
             double valueDelta = delta(s,s1rand,s2rand,t1rand,t2rand);
-            if (    abs(m*m - s1rand - t1rand + t2rand) > 50 &&
-                    abs(mz*mz - s + s1rand - t2rand) > 50 &&
-                    abs(mz*mz + s - s1rand - s2rand) > 50 &&
-                    abs(m*m - s + s2rand - t1rand) > 50 &&
+            if (    abs(m*m - s1rand - t1rand + t2rand) > diverg &&
+                    abs(mz*mz - s + s1rand - t2rand) > diverg &&
+                    abs(mz*mz + s - s1rand - s2rand) > diverg &&
+                    abs(m*m - s + s2rand - t1rand) > diverg &&
                     //valueG1 <=0 &&
-                    //valueG2 <=0 &&
+                    valueG2 <=0 &&
                     valueG3 <=0 &&
                     valueDelta <= -10 &&
                     t2rand < t2plus(s2rand, t1rand) && t2rand > t2minus(s2rand, t1rand) &&
