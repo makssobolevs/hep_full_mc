@@ -128,8 +128,8 @@ int main(){
             double valueDelta = delta(s,s1rand,s2rand,t1rand,t2rand);
             if (    abs(m*m - s1rand - t1rand + t2rand) > 50 &&
                     abs(mz*mz - s + s1rand - t2rand) > 50 &&
-                    abs(mz*mz + s + s1rand - s2rand) > 50 &&
-                    abs(m*m - - s + s2rand - t1rand) > 50 &&
+                    abs(mz*mz + s - s1rand - s2rand) > 50 &&
+                    abs(m*m - s + s2rand - t1rand) > 50 &&
                     //valueG1 <=0 &&
                     valueG2 <=0 &&
                     valueG3 <=0 &&
@@ -137,7 +137,7 @@ int main(){
                     t2rand < t2plus(s2rand, t1rand) && t2rand > t2minus(s2rand, t1rand) &&
                     t1rand < t1plus(s, s2rand) && t1rand > t1minus(s, s2rand)) {
                 //double x = abs(matrixEl(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta));
-                double x = abs(matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta));
+                double x = matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
                 if (x > maxX) {
                     maxX = x;
                 }
