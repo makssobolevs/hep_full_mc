@@ -10,9 +10,9 @@ const double ga = -0.5;
 
 const double gv = -0.0206;
 
-double a(double s, double s1); 
-double b(double s, double s1, double s2, double t1); 
-double c(double s, double s1, double s2, double t1); 
+//double a(double s, double s1);
+//double b(double s, double s1, double s2, double t1);
+//double c(double s, double s1, double s2, double t1);
 double lambda(double x, double y, double z);
 double x1(double s1, double t1);
 double x2(double s, double s1);
@@ -22,6 +22,5 @@ double t2plus(double s2, double t1);
 double t2minus(double s2, double t1);
 double gg(double x, double y, double z, double u, double v, double w);
 double delta(double s, double s1, double s2, double t1, double t2);
-//double matrixEl(double s, double s1, double s2, double t1);
 
 #endif //DEFINITIONS_H

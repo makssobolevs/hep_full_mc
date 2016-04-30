@@ -8,12 +8,10 @@ SOURCES += main.cpp \
         definitions.cpp \
         matrixElement.cpp \
         msimplified.cpp \
-        mlast.cpp
 
 HEADERS += definitions.h \
         matrixElement.h \
         msimplified.h \
-        mlast.h
         
 OBJECTS_DIR = ../obj/
 
