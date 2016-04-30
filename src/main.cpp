@@ -83,8 +83,8 @@ void findRange(pair<double, double>& range, double minNow, double maxNow){
 
 int main(){
 
-    double sqrtS = 250;
-    double finalSqrtS = 260;
+    double sqrtS = 100;
+    double finalSqrtS = sqrtS+10;
     double d_sqrtS = 10;
 
     random_device rd;
@@ -175,16 +175,22 @@ int main(){
                     t2rand < t2plus(s2rand, t1rand) && t2rand > t2minus(s2rand, t1rand) &&
                     t1rand < t1plus(s, s2rand) && t1rand > t1minus(s, s2rand)) {
 
-                double x = matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
+                double x = m1(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
                 findRange(rangeX, x, x);
 
                 for (size_t k = 0; k < histo_grid.size() - 1; k++) {
                     if (x < histo_grid.at(k+1) && x > histo_grid.at(k)) {
                         histo.at(k)++;
                         if (k > 1) {
-                            tout << "N:" << i << " " << x << " s1:" << s1rand <<
-                                    " s2:" << s2rand << " t1:" << t1rand << " t2:" << t2rand <<
-                                    " sqrtDelta:" << sqrt(-valueDelta) << "\n";
+                            tout << "N:" << i << " " << x <<
+                                    " s1:" << s1rand <<
+                                    " s2:" << s2rand <<
+                                    " t1:" << t1rand <<
+                                    " (" << t1minus(s, s2rand) << ", " << t1plus(s, s2rand) << ")" <<
+                                    " t2:" << t2rand <<
+                                    " (" << t2minus(s2rand, t1rand) << ", " << t2plus(s2rand, t1rand) << ")" <<
+                                    " sqrtDelta:" << sqrt(-valueDelta) <<
+                                    "\n";
                         }
                     }
                 }
@@ -202,6 +208,15 @@ int main(){
                     tout << mess;
                     cout << mess;
                     logPoint(tout, x, s, s1rand, s2rand, t1rand, t2rand);
+                    tout << "N:" << i << " " << x <<
+                            " s1:" << s1rand <<
+                            " s2:" << s2rand <<
+                            " t1:" << t1rand <<
+                            " (" << t1minus(s, s2rand) << ", " << t1plus(s, s2rand) << ")" <<
+                            " t2:" << t2rand <<
+                            " (" << t2minus(s2rand, t1rand) << ", " << t2plus(s2rand, t1rand) << ")" <<
+                            " sqrtDelta:" << sqrt(-valueDelta) <<
+                            "\n";
                     return 0;
                 }
                 sum += x;
