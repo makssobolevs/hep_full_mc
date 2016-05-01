@@ -93,15 +93,45 @@ int main(){
         cout << "Cant connect to mysql databas\n";
         return 0;
     }
-    mysqlpp::Query querySelect = conn.query("SELECT x0,x1 FROM hepBounds WHERE mi = %0");
+    mysqlpp::Query querySelect = conn.query("SELECT x0,x1 FROM hepBounds WHERE sqrtS = %0 AND mi = %1");
     querySelect.parse();
-    mysqlpp::Query queryUpdate = conn.query("UPDATE hepBounds SET x0 = %1, x1 = %2 WHERE mi = %0");
+    mysqlpp::Query queryUpdate = conn.query("UPDATE hepBounds SET x0 = %2, x1 = %3 WHERE sqrtS = %0 AND mi = %1");
     queryUpdate.parse();
-    mysqlpp::Query queryInsert = conn.query("");
+    //mysqlpp::Query queryInsert = conn.query("INSERT INTO histogramms VALUES(%0:sqrtS, %1:mi, %2:col, %3:x, %4:points, %5:coeff)");
+    //queryInsert.parse();
+    mysqlpp::Query queryUpdateHisto = conn.query("UPDATE histogramms SET points = %3, coeff = %4 WHERE sqrtS = %0 AND mi = %1 AND hCol = %2");
+    queryUpdateHisto.parse();
+    mysqlpp::Query querySelectCoeff = conn.query("SELECT coeff FROM histogramms WHERE sqrtS = %0 AND mi = %1 ORDER BY hCol");
+    querySelectCoeff.parse();
 
     double sqrtS = 100;
     double finalSqrtS = sqrtS+10;
     double d_sqrtS = 10;
+    size_t col = 15;
+    /*{
+        mysqlpp::Query queryDelete1 = conn.query("DELETE FROM histogramms WHERE 1=1");
+        queryDelete1.store();
+        mysqlpp::Query queryDelete2 = conn.query("DELETE FROM hepBounds WHERE 1=1");
+        queryDelete2.store();
+        mysqlpp::Query queryClear1 = conn.query("INSERT INTO hepBounds VALUES (%0:sqrtS,%1:mi,%2:x0,%3:x1)");
+        queryClear.parse();
+        mysqlpp::Query queryClear2 = conn.query("INSERT INTO histogramms VALUES (%0:sqrtS, %1:mi, %2:col, %3:x, %4:points, %5:coeff)");
+        queryClear.parse();
+        double tempS = sqrtS;
+        while (tempS < finalSqrtS){
+            for(size_t i = 0; i < MI_NUMBER; i++){
+                queryClear1.store(tempS, i, 0, 0);
+                for (size_t j = 0; j < col; j++){
+                    queryClear2.store(tempS, i, j, 0, 0, 1);
+                }
+            }
+            tempS += d_sqrtS;
+        }
+    }*/
+
+
+
+
 
     random_device rd;
     mt19937 gen(rd());
@@ -143,30 +173,33 @@ int main(){
         pair <double, double> rangeT1 = rangeT2;
         pair <double, double> rangeX = rangeT2;
 
-        vector<pair<double, double>> vectorRangesX(MI_NUMBER, rangeX);
-
-
         rand_dist disS1(S1_start,S1_finish);
         rand_dist disS2(S2_start, S2_finish);
         rand_dist disT1(T1_start,0);
         rand_dist disT2(T2_start, T2_finish);
 
+        vector<pair<double, double>> vectorRangesX(MI_NUMBER, rangeX);
         vector <vector<double>> histo_grid;
-        int col = 15;
-
+        vector <mysqlpp::StoreQueryResult> vectorCoeff;
         vector <vector<int>> histo;
+
+        for (size_t k = 0; k < MI_NUMBER; k++) {
+            mysqlpp::StoreQueryResult res = querySelectCoeff.store(sqrtS, k);
+            vectorCoeff.push_back(res);
+        }
+
         for (size_t k = 0; k < MI_NUMBER; k ++) {
             vector<int>  v (col, 0);
             histo.push_back(v);
         }
 
         for (size_t k = 0; k < MI_NUMBER; k++) {
-            mysqlpp::StoreQueryResult res = querySelect.store(k);
+            mysqlpp::StoreQueryResult res = querySelect.store(sqrtS, k);
             double x0 = res[0][0];
             double x1 = res[0][1];
             double dx = abs(x1 - x0) / col;
-            vector<double> v (col, 0);
-            for (int l = 0; l < col; l++) {
+            vector<double> v;
+            for (int l = 0; l <= col; l++) {
                 v.push_back(x0 + l*dx);
             }
             histo_grid.push_back(v);
@@ -217,13 +250,13 @@ int main(){
                     double xNow = (*mi[j])(s, s1rand, s2rand, t1rand, t2rand);
                     findRange(vectorRangesX.at(j), xNow, xNow);
                     x += xNow;
-                }
-
-                /*for (size_t k = 0; k < histo_grid.size() - 1; k++) {
-                    if (x < histo_grid.at(k+1) && x > histo_grid.at(k)) {
-                        histo.at(k)++;
+                    for (size_t k = 0; k < col; k++) {
+                        if (xNow < histo_grid[j][k+1] && xNow > histo_grid[j][k]) {
+                            histo[j][k]++;
+                            x += xNow* vectorCoeff.at(j)[k][0];
+                        }
                     }
-                }*/
+                }
 
 
                 if (std::isnan(x)) {
@@ -233,22 +266,10 @@ int main(){
                     return 0;
 
                 }
-                if (x < 0) {/*
-                    string mess = "ERROR NEGATIVE ";
-                    tout << mess;
-                    cout << mess;
-                    logPoint(tout, x, s, s1rand, s2rand, t1rand, t2rand);
-                    tout << "N:" << i << " " << x <<
-                            " s1:" << s1rand <<
-                            " s2:" << s2rand <<
-                            " t1:" << t1rand <<
-                            " (" << t1minus(s, s2rand) << ", " << t1plus(s, s2rand) << ")" <<
-                            " t2:" << t2rand <<
-                            " (" << t2minus(s2rand, t1rand) << ", " << t2plus(s2rand, t1rand) << ")" <<
-                            " sqrtDelta:" << sqrt(-valueDelta) <<
-                            "\n";*/
-                    //return 0;
-                }
+                //if (x < 0) {
+                //    cout << "ERROR NEGATIVE" << "\n";
+                //    return 0;
+                //}
                 sum += x/sqrt(-valueDelta);
                 points_cought++;
             }
@@ -266,13 +287,18 @@ int main(){
 
         gridOut.open(gridFileName, std::ios_base::app);
         gridOut << "sqrtS=" << sqrtS << "\n";
-        for (int k = 0; k < vectorRangesX.size(); k++) {
+        for (size_t k = 0; k < vectorRangesX.size(); k++) {
             logBounds(gridOut, "X", vectorRangesX.at(k).first, vectorRangesX.at(k).second);
-            queryUpdate.store(k, vectorRangesX.at(k).first, vectorRangesX.at(k).second);
-            //cout << (b ? "true" : "false") << "\n";
+            queryUpdate.store(sqrtS, k, vectorRangesX.at(k).first, vectorRangesX.at(k).second);
         }
         gridOut << endl;
         gridOut.close();
+
+        for (int k = 0; k < MI_NUMBER; k++) {
+            for (int l = 0; l < col; l++) {
+                queryUpdateHisto.store(sqrtS, k, l, histo[k][l], (double)histo[k][l]/points_cought);
+            }
+        }
 
         /*ofstream hout("histo.dat");
         for (size_t i = 0; i < histo_grid.size(); i++) {
