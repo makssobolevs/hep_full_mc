@@ -105,7 +105,7 @@ int main(){
     querySelectCoeff.parse();
 
     double sqrtS = 100;
-    double finalSqrtS = sqrtS+10;
+    double finalSqrtS = 300;
     double d_sqrtS = 10;
     size_t col = 15;
     /*{
@@ -114,9 +114,9 @@ int main(){
         mysqlpp::Query queryDelete2 = conn.query("DELETE FROM hepBounds WHERE 1=1");
         queryDelete2.store();
         mysqlpp::Query queryClear1 = conn.query("INSERT INTO hepBounds VALUES (%0:sqrtS,%1:mi,%2:x0,%3:x1)");
-        queryClear.parse();
+        queryClear1.parse();
         mysqlpp::Query queryClear2 = conn.query("INSERT INTO histogramms VALUES (%0:sqrtS, %1:mi, %2:col, %3:x, %4:points, %5:coeff)");
-        queryClear.parse();
+        queryClear2.parse();
         double tempS = sqrtS;
         while (tempS < finalSqrtS){
             for(size_t i = 0; i < MI_NUMBER; i++){
@@ -158,7 +158,7 @@ int main(){
         double diverg = 50;
 
         double S1_finish = (sqrtS-mz)*(sqrtS-mz);
-        double S1_start = 0.05*S1_finish;//m*m
+        double S1_start = 4;//m*m
 
         double S2_start = s2range(sqrtS).first;
         double S2_finish = s2range(sqrtS).second;
@@ -199,7 +199,7 @@ int main(){
             double x1 = res[0][1];
             double dx = abs(x1 - x0) / col;
             vector<double> v;
-            for (int l = 0; l <= col; l++) {
+            for (size_t l = 0; l <= col; l++) {
                 v.push_back(x0 + l*dx);
             }
             histo_grid.push_back(v);
@@ -295,7 +295,7 @@ int main(){
         gridOut.close();
 
         for (int k = 0; k < MI_NUMBER; k++) {
-            for (int l = 0; l < col; l++) {
+            for (size_t l = 0; l < col; l++) {
                 queryUpdateHisto.store(sqrtS, k, l, histo[k][l], (double)histo[k][l]/points_cought);
             }
         }
