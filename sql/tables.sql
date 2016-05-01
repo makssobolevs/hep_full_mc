@@ -1,0 +1,17 @@
+CREATE TABLE hepBounds (
+  mi INT NOT NULL PRIMARY KEY  CHECK (mi >=0 AND mi < 10),
+  x0 DOUBLE,
+  x1 DOUBLE
+);
+
+DELETE FROM hepBounds WHERE 1=1;
+
+INSERT INTO hepBounds VALUES (0, 0,0);
+INSERT INTO hepBounds VALUES (1, 0,0);
+INSERT INTO hepBounds VALUES (2, 0,0);
+INSERT INTO hepBounds VALUES (3, 0,0);
+INSERT INTO hepBounds VALUES (4, 0,0);
+INSERT INTO hepBounds VALUES (5, 0,0);
+
+SELECT * FROM hepBounds;
+SELECT x0,x1 FROM hepBounds WHERE mi = 1;

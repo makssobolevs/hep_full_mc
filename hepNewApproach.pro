@@ -16,3 +16,8 @@ HEADERS += definitions.h \
 OBJECTS_DIR = ../obj/
 
 QMAKE_CXXFLAGS += -O3
+
+INCLUDEPATH += /usr/include/mysql /usr/include/mysql++
+
+LIBS += -L"/usr/lib" -L"/usr/lib" -lmysqlclient -lmysqlpp
+

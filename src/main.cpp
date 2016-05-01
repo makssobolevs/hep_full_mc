@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <utility>
+#include <mysql++/mysql++.h>
 
 #include "matrixElement.h"
 #include "definitions.h"
@@ -18,9 +19,12 @@
 
 using namespace std;
 
+enum modes {MODE_FOUND_BOUNDS, MODE_MAKE_HISTO_, MODE_CALC};
+
 const string outName = "output.dat";
 const string outLogName = "log.dat";
 const string boundsOutName = "bounds.dat";
+const string gridFileName = "gird.dat";
 
 typedef uniform_real_distribution<> rand_dist;
 
@@ -59,7 +63,7 @@ double matrixEl(double s, double s1, double s2, double t1, double t2){
 
 
 void logBounds(ofstream& s, string name, double start, double finish) {
-    s << name << "_start: " << start << " " << name << "_finish: " << finish << "\n";
+    s << name << "_start=" << start << " " << name << "_finish=" << finish << "\n";
 }
 
 void logPoint(ofstream& stream, double x, double s, double s1, double s2, double t1, double t2) {
@@ -81,7 +85,19 @@ void findRange(pair<double, double>& range, double minNow, double maxNow){
 }
 
 
+
 int main(){
+
+    mysqlpp::Connection conn(false);
+    if (!conn.connect("my_db","localhost","ace","123")) {
+        cout << "Cant connect to mysql databas\n";
+        return 0;
+    }
+    mysqlpp::Query querySelect = conn.query("SELECT x0,x1 FROM hepBounds WHERE mi = %0");
+    querySelect.parse();
+    mysqlpp::Query queryUpdate = conn.query("UPDATE hepBounds SET x0 = %1, x1 = %2 WHERE mi = %0");
+    queryUpdate.parse();
+    mysqlpp::Query queryInsert = conn.query("");
 
     double sqrtS = 100;
     double finalSqrtS = sqrtS+10;
@@ -98,6 +114,9 @@ int main(){
 
     ofstream boundsOut(boundsOutName);
     boundsOut.close();
+
+    ofstream gridOut(gridFileName);
+    gridOut.close();
 
     while (sqrtS < finalSqrtS) {
         TimePoint time1 = chrono::system_clock::now();
@@ -124,22 +143,36 @@ int main(){
         pair <double, double> rangeT1 = rangeT2;
         pair <double, double> rangeX = rangeT2;
 
+        vector<pair<double, double>> vectorRangesX(MI_NUMBER, rangeX);
+
 
         rand_dist disS1(S1_start,S1_finish);
         rand_dist disS2(S2_start, S2_finish);
         rand_dist disT1(T1_start,0);
         rand_dist disT2(T2_start, T2_finish);
 
-        vector <double> histo_grid;
+        vector <vector<double>> histo_grid;
         int col = 15;
-        vector <int> histo(col  , 0);
-        double max = 200;
 
-        double dx = max / col;
-
-        for (int i = 0; i < col; i++) {
-            histo_grid.push_back(i*dx);
+        vector <vector<int>> histo;
+        for (size_t k = 0; k < MI_NUMBER; k ++) {
+            vector<int>  v (col, 0);
+            histo.push_back(v);
         }
+
+        for (size_t k = 0; k < MI_NUMBER; k++) {
+            mysqlpp::StoreQueryResult res = querySelect.store(k);
+            double x0 = res[0][0];
+            double x1 = res[0][1];
+            double dx = abs(x1 - x0) / col;
+            vector<double> v (col, 0);
+            for (int l = 0; l < col; l++) {
+                v.push_back(x0 + l*dx);
+            }
+            histo_grid.push_back(v);
+        }
+
+
 
 
         tout.open(outLogName, std::ios_base::app);
@@ -157,8 +190,12 @@ int main(){
             double t1rand = disT1(gen);
             double t2rand = disT2(gen);
 
-            findRange(rangeT2, t2minus(s2rand, t1rand), t2plus(s2rand, t1rand));
-            findRange(rangeT1, t1minus(s, s2rand), t1plus(s, s2rand));
+            double t1p = t1plus(s, s2rand);
+            double t1m = t1minus(s, s2rand);
+            double t2p = t2plus(s2rand, t1rand);
+            double t2m = t2minus(s2rand, t1rand);
+            findRange(rangeT2, t2m, t2p);
+            findRange(rangeT1, t1m, t1p);
 
             //double valueG1 = gg(s1rand, s2rand,s,0,m*m,mz*mz);
             double valueG2 = gg(s2rand, t2rand, mz*mz, t1rand,0,0);
@@ -172,28 +209,21 @@ int main(){
                     valueG2 <=0 &&
                     valueG3 <=0 &&
                     valueDelta <= -10 &&
-                    t2rand < t2plus(s2rand, t1rand) && t2rand > t2minus(s2rand, t1rand) &&
-                    t1rand < t1plus(s, s2rand) && t1rand > t1minus(s, s2rand)) {
+                    t2rand < t2p && t2rand > t2m &&
+                    t1rand < t1p && t1rand > t1m) {
 
-                double x = m1(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
-                findRange(rangeX, x, x);
+                double x = 0;
+                for (int j = 0; j < MI_NUMBER; j++) {
+                    double xNow = (*mi[j])(s, s1rand, s2rand, t1rand, t2rand);
+                    findRange(vectorRangesX.at(j), xNow, xNow);
+                    x += xNow;
+                }
 
-                for (size_t k = 0; k < histo_grid.size() - 1; k++) {
+                /*for (size_t k = 0; k < histo_grid.size() - 1; k++) {
                     if (x < histo_grid.at(k+1) && x > histo_grid.at(k)) {
                         histo.at(k)++;
-                        if (k > 1) {
-                            tout << "N:" << i << " " << x <<
-                                    " s1:" << s1rand <<
-                                    " s2:" << s2rand <<
-                                    " t1:" << t1rand <<
-                                    " (" << t1minus(s, s2rand) << ", " << t1plus(s, s2rand) << ")" <<
-                                    " t2:" << t2rand <<
-                                    " (" << t2minus(s2rand, t1rand) << ", " << t2plus(s2rand, t1rand) << ")" <<
-                                    " sqrtDelta:" << sqrt(-valueDelta) <<
-                                    "\n";
-                        }
                     }
-                }
+                }*/
 
 
                 if (std::isnan(x)) {
@@ -203,7 +233,7 @@ int main(){
                     return 0;
 
                 }
-                if (x < 0) {
+                if (x < 0) {/*
                     string mess = "ERROR NEGATIVE ";
                     tout << mess;
                     cout << mess;
@@ -216,10 +246,10 @@ int main(){
                             " t2:" << t2rand <<
                             " (" << t2minus(s2rand, t1rand) << ", " << t2plus(s2rand, t1rand) << ")" <<
                             " sqrtDelta:" << sqrt(-valueDelta) <<
-                            "\n";
-                    return 0;
+                            "\n";*/
+                    //return 0;
                 }
-                sum += x;
+                sum += x/sqrt(-valueDelta);
                 points_cought++;
             }
         }
@@ -229,15 +259,26 @@ int main(){
         boundsOut << "s:" << s << "\n";
         logBounds(boundsOut, "T1", rangeT1.first, rangeT1.second);
         logBounds(boundsOut, "T2", rangeT2.first, rangeT2.second);
-        logBounds(boundsOut, "X", rangeX.first, rangeX.second);
         boundsOut << "\n";
         boundsOut.close();
 
-        ofstream hout("histo.dat");
+
+
+        gridOut.open(gridFileName, std::ios_base::app);
+        gridOut << "sqrtS=" << sqrtS << "\n";
+        for (int k = 0; k < vectorRangesX.size(); k++) {
+            logBounds(gridOut, "X", vectorRangesX.at(k).first, vectorRangesX.at(k).second);
+            queryUpdate.store(k, vectorRangesX.at(k).first, vectorRangesX.at(k).second);
+            //cout << (b ? "true" : "false") << "\n";
+        }
+        gridOut << endl;
+        gridOut.close();
+
+        /*ofstream hout("histo.dat");
         for (size_t i = 0; i < histo_grid.size(); i++) {
             hout << histo_grid.at(i) << " " << histo.at(i) << "\n";
         }
-        hout.close();
+        hout.close();*/
 
 
         fout.open(outName,std::ios_base::app);
