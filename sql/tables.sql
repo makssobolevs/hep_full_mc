@@ -29,3 +29,4 @@ SELECT * FROM hepBounds;
 SELECT x0,x1 FROM hepBounds WHERE mi = 1;
 
 SELECT coeff FROM histogramms WHERE sqrtS = 100 AND mi = 0 ORDER BY hCol;
+SELECT max(points) FROM histogramms WHERE sqrtS = 100 AND mi = 2;

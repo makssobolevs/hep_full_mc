@@ -103,11 +103,16 @@ int main(){
     queryUpdateHisto.parse();
     mysqlpp::Query querySelectCoeff = conn.query("SELECT coeff FROM histogramms WHERE sqrtS = %0 AND mi = %1 ORDER BY hCol");
     querySelectCoeff.parse();
+    mysqlpp::Query querySelectPoints = conn.query("SELECT points FROM histogramms WHERE sqrtS = %0 AND mi = %1 ORDER BY hCol");
+    querySelectPoints.parse();
+    mysqlpp::Query querySelectMax = conn.query("SELECT max(points) FROM histogramms WHERE sqrtS = %0 AND mi = %1");
+    querySelectMax.parse();
+
 
     double sqrtS = 100;
     double finalSqrtS = 300;
     double d_sqrtS = 10;
-    size_t col = 15;
+    size_t col = 30;
     /*{
         mysqlpp::Query queryDelete1 = conn.query("DELETE FROM histogramms WHERE 1=1");
         queryDelete1.store();
@@ -181,11 +186,17 @@ int main(){
         vector<pair<double, double>> vectorRangesX(MI_NUMBER, rangeX);
         vector <vector<double>> histo_grid;
         vector <mysqlpp::StoreQueryResult> vectorCoeff;
+        vector <mysqlpp::StoreQueryResult> vectorPoints;
         vector <vector<int>> histo;
+        vector <int> vectorMax;
 
         for (size_t k = 0; k < MI_NUMBER; k++) {
             mysqlpp::StoreQueryResult res = querySelectCoeff.store(sqrtS, k);
+            mysqlpp::StoreQueryResult res1 = querySelectPoints.store(sqrtS, k);
+            mysqlpp::StoreQueryResult res2 = querySelectMax.store(sqrtS, k);
             vectorCoeff.push_back(res);
+            vectorPoints.push_back(res1);
+            vectorMax.push_back(res2[0][0]);
         }
 
         for (size_t k = 0; k < MI_NUMBER; k ++) {
@@ -249,11 +260,14 @@ int main(){
                 for (int j = 0; j < MI_NUMBER; j++) {
                     double xNow = (*mi[j])(s, s1rand, s2rand, t1rand, t2rand);
                     findRange(vectorRangesX.at(j), xNow, xNow);
-                    x += xNow;
                     for (size_t k = 0; k < col; k++) {
                         if (xNow < histo_grid[j][k+1] && xNow > histo_grid[j][k]) {
                             histo[j][k]++;
                             x += xNow* vectorCoeff.at(j)[k][0];
+                            //int vp = vectorPoints.at(j)[k][0];
+                            //if (vp > 20000){
+                            //    x += xNow;
+                            //}
                         }
                     }
                 }
@@ -296,7 +310,7 @@ int main(){
 
         for (int k = 0; k < MI_NUMBER; k++) {
             for (size_t l = 0; l < col; l++) {
-                queryUpdateHisto.store(sqrtS, k, l, histo[k][l], (double)histo[k][l]/points_cought);
+                queryUpdateHisto.store(sqrtS, k, l, histo[k][l], (double)histo[k][l]/vectorMax.at(k));
             }
         }
 
