@@ -39,7 +39,12 @@ double (*mi[])(double, double, double, double, double) = {m1, m2, m3, m4, m5, m6
 double matrixEl_terms(int k1, int k2, double s, double s1, double s2, double t1, double t2){
     double answer = 0;
     for (int i = k1; i < k2; ++i) {
-        answer += (*mi[i])(s, s1, s2, t1, t2);       
+        if (i == 0 || i == 1 || i == 2){
+            answer += abs((*mi[i])(s, s1, s2, t1, t2));
+        }
+        else{
+            answer += (*mi[i])(s, s1, s2, t1, t2);
+        }
     }
     return answer;
 
@@ -84,7 +89,7 @@ void findRange(pair<double, double>& range, double minNow, double maxNow){
 int main(){
 
     double sqrtS = 100;
-    double finalSqrtS = 300;
+    double finalSqrtS = 150;
     double d_sqrtS = 10;
 
     random_device rd;
@@ -156,14 +161,15 @@ int main(){
                     abs(mz*mz - s + s1rand - t2rand) > diverg &&
                     abs(mz*mz + s - s1rand - s2rand) > diverg &&
                     abs(m*m - s + s2rand - t1rand) > diverg &&
-                    //valueG1 <=0 &&
+                    //valueG0 <=0 &&
                     valueG2 <=0 &&
                     valueG3 <=0 &&
                     valueDelta <= -10 &&
                     t2rand < t2plus(s2rand, t1rand) && t2rand > t2minus(s2rand, t1rand) &&
-                    t1rand < t1plus(s, s2rand) && t1rand > t1minus(s, s2rand)) {
+                    t1rand < t1plus(s, s2rand) && t1rand > t1minus(s, s2rand) &&
+                    m1(s, s1rand, s2rand, t1rand, t2rand) > 0) {
 
-                double x = matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand)/sqrt(-valueDelta);
+                double x = matrixElementSimplified(s,s1rand,s2rand,t1rand, t2rand);
                 findRange(rangeX, x, x);
 
                 if (std::isnan(x)) {
@@ -180,7 +186,7 @@ int main(){
                     logPoint(tout, x, s, s1rand, s2rand, t1rand, t2rand);
                     return 0;
                 }
-                sum += x;
+                sum += x/sqrt(-valueDelta);
                 points_cought++;
             }
         }
